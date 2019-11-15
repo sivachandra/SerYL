@@ -1,11 +1,12 @@
-#ifndef LLVM_UTILS_SERYL_YCDREADER_H
-#define LLVM_UTILS_SERYL_YCDREADER_H
+#ifndef LLVM_UTILS_SERYL_YCD_LOADER_H
+#define LLVM_UTILS_SERYL_YCD_LOADER_H
 
 #include "YCDUnit.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/Support/SourceMgr.h"
 
 #include <memory>
 
@@ -20,8 +21,9 @@ class Stream;
 
 class YCDClass;
 
-class YCDReader {
-  yaml::Stream *YStream;
+class YCDLoader {
+  std::unique_ptr<yaml::Stream> YStream;
+  std::unique_ptr<SourceMgr> SrcMgr;
 
   void readPackageName(yaml::Node *Value, YCDName &PkgName);
 
@@ -33,9 +35,10 @@ class YCDReader {
 
 public:
 
-  std::unique_ptr<YCDUnit> read(yaml::Stream *YAMLStream);
+  std::unique_ptr<YCDUnit> load(const std::string &InputFile,
+                                const std::vector<std::string> &ImportDirs);
 };
 
 } // namespace llvm
 
-#endif // LLVM_UTILS_SERYL_YCDREADER_H
+#endif // LLVM_UTILS_SERYL_YCD_LOADER_H

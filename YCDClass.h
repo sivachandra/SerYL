@@ -1,6 +1,8 @@
 #ifndef LLVM_UTILS_SERYL_YCDCLASS_H
 #define LLVM_UTILS_SERYL_YCDCLASS_H
 
+#include "Support.h"
+
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
@@ -8,29 +10,33 @@
 
 namespace llvm {
 
-enum YCDFieldKind {
-  YCD_Bool,
-  YCD_Int8,
-  YCD_Int16,
-  YCD_Int32,
-  YCD_Int64,
-  YCD_Double,
-  YCD_String,
-  YCD_List,
-  YCD_Class
-};
 
 class YCDField {
+public:
+  enum FieldKind {
+    FK_Scalar,
+    FK_Class,
+    FK_List
+  };
+
+private:
+  friend class YCDUnit;
+
+  // Field names and simple string as they are never fully qualified.
   std::string Name;
+
+  // Type names are fully qualified unless they are from the main file.
   std::string TypeName;
-  YCDFieldKind TypeKind;
+
+  FieldKind TypeKind;
 
 public:
   YCDField(const std::string &N, const std::string &T) : Name(N), TypeName(T) {}
 };
 
 class YCDClass {
-  friend class YCDReader;
+  friend class YCDLoader;
+  friend class YCDUnit;
 
   std::string Name;
   std::vector<YCDField> Fields;
@@ -43,10 +49,7 @@ class YCDClass {
 
 public:
 
-  const std::string &getName() const { return Name; }
-
-  void writeHeader(llvm::raw_ostream &OS) const;
-  void writeImpl(llvm::raw_ostream &OS) const;
+  void writeCppDefinition(llvm::raw_ostream &OS) const;
 };
 
 } // namespace llvm

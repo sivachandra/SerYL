@@ -1,9 +1,12 @@
 add_llvm_utility(
   seryl
   Main.cpp
+  Support.cpp
+  Support.h
+  YCDClass.cpp
   YCDClass.h
-  YCDReader.cpp
-  YCDReader.h
+  YCDLoader.cpp
+  YCDLoader.h
   YCDUnit.cpp
   YCDUnit.h
 )

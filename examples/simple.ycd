@@ -1,0 +1,9 @@
+__package__: seryl.simple
+
+Foo:
+  MyInt: int
+  MyString: string
+
+Bar:
+  MyFoo: Foo
+  MyDoubleList: list<double>
