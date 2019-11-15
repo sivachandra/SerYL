@@ -3,6 +3,7 @@
 #include "YCDClass.h"
 #include "YCDUnit.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/YAMLParser.h"
@@ -12,7 +13,36 @@ namespace {
 const char KW_Import[] = "__import__";
 const char KW_Package[] = "__package__";
 
+bool isValidIdentifier(llvm::StringRef Id) {
+  assert(Id.size() > 0);
+
+  for (size_t i = 0; i < Id.size(); ++i) {
+    char c = Id[i];
+    if (c == '_' || llvm::isAlpha(c)) {
+      continue;
+    }
+    if (i > 0 && llvm::isDigit(c)) {
+      continue;
+    }
+    return false;
+  }
+
+  return true;
 }
+
+bool isValidFQName(llvm::StringRef FQName, llvm::YCDName &Name) {
+  llvm::SmallVector<llvm::StringRef, 8> Parts;
+  FQName.split(Parts, ".");
+  for (llvm::StringRef P : Parts) {
+    if (!isValidIdentifier(P)) {
+      return false;
+    }
+    Name.push_back(P);
+  }
+  return true;
+}
+
+} // anonymous namespace
 
 namespace llvm {
 
@@ -56,7 +86,10 @@ void YCDReader::loadClass(yaml::Node *Value, YCDClass *C) {
     StringRef FieldName = getScalarValueOrDie(
         FieldNode.getKey(),
         "Field name should be a simple scalar string.");
-    // TODO: Validate FieldName.
+    if (!isValidIdentifier(FieldName)) {
+      YStream->printError(FieldNode.getKey(), "Invalid field name.");
+      std::exit(1);
+    }
 
     StringRef FieldType = getScalarValueOrDie(
         FieldNode.getValue(),
@@ -68,12 +101,13 @@ void YCDReader::loadClass(yaml::Node *Value, YCDClass *C) {
   }
 }
 
-StringRef YCDReader::readPackageName(yaml::Node *Value) {
-  // TODO: Validate package name.
-  return getScalarValueOrDie(Value, "Package name should be a scalar value.");
-}
-
-void YCDReader::indexTopLevelNode(yaml::Node *TopLevel) {
+void YCDReader::readPackageName(yaml::Node *Value, YCDName &PkgName) {
+  StringRef FQPkgName = getScalarValueOrDie(
+      Value, "Package name should be a scalar value.");
+  if (!isValidFQName(FQPkgName, PkgName)) {
+    YStream->printError(Value, "Invalid package name.");
+    std::exit(1);
+  }
 }
 
 std::unique_ptr<YCDUnit> YCDReader::read(yaml::Stream *YAMLStream) {
@@ -95,14 +129,21 @@ std::unique_ptr<YCDUnit> YCDReader::read(yaml::Stream *YAMLStream) {
       yaml::Node *Key = N.getKey();
       yaml::Node *Value = N.getValue();
 
-      StringRef KeyStr = getScalarValueOrDie(Key, "Expecting a scalar key value");
+      StringRef KeyStr = getScalarValueOrDie(Key, "Expecting a scalar top-level key.");
+      if (!isValidIdentifier(KeyStr)) {
+        YStream->printError(Key, "Invalid top-level key name.");
+        std::exit(1);
+      }
 
       if (KeyValueCount == 1) {
         if (KeyStr != KW_Package) {
           YStream->printError(Key, StringRef("First key should be ") + KW_Package);
           std::exit(1);
         }
-        Unit.reset(new YCDUnit(readPackageName(Value)));
+        YCDName PkgName;
+        readPackageName(Value, PkgName);
+        
+        Unit.reset(new YCDUnit(PkgName));
         continue;
       }
 
@@ -116,7 +157,6 @@ std::unique_ptr<YCDUnit> YCDReader::read(yaml::Stream *YAMLStream) {
       }
 
       // KeyStr is a class name.
-      // TODO: Validate the name.
       YCDClass C(KeyStr);
       loadClass(Value, &C);
       Unit->Classes.emplace_back(C);

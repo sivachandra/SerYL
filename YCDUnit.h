@@ -3,6 +3,7 @@
 
 #include "YCDClass.h"
 
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <memory>
@@ -11,13 +12,15 @@
 
 namespace llvm {
 
+typedef SmallVector<std::string, 8> YCDName;
+
 class YCDUnit {
   friend class YCDReader;
 
-  std::string PackageName;
+  YCDName PackageName;
   std::vector<YCDClass> Classes;
 
-  explicit YCDUnit(llvm::StringRef PkgName) : PackageName(PkgName) {}
+  explicit YCDUnit(const YCDName &PkgName) : PackageName(PkgName) {}
 
 public:
   

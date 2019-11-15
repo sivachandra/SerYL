@@ -1,6 +1,8 @@
 #ifndef LLVM_UTILS_SERYL_YCDREADER_H
 #define LLVM_UTILS_SERYL_YCDREADER_H
 
+#include "YCDUnit.h"
+
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -14,21 +16,18 @@ namespace yaml {
 class Node;
 class Stream;
 
-}
+} // namespace yaml
 
 class YCDClass;
-class YCDUnit;
 
 class YCDReader {
   yaml::Stream *YStream;
 
-  StringRef readPackageName(yaml::Node *Value);
+  void readPackageName(yaml::Node *Value, YCDName &PkgName);
 
   void readImportList(yaml::Node *List, SmallVector<StringRef, 8> &Imports);
 
   void loadClass(yaml::Node* Value, YCDClass *C);
-
-  void indexTopLevelNode(yaml::Node *N);
 
   StringRef getScalarValueOrDie(yaml::Node *N, Twine Msg);
 
@@ -39,4 +38,4 @@ public:
 
 } // namespace llvm
 
-#endif // LLVM_UTILS_SERYL_YCDUNIT_H
+#endif // LLVM_UTILS_SERYL_YCDREADER_H
