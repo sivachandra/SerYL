@@ -1,0 +1,6 @@
+__package__: seryl.imported
+__import__: 
+  - llvm/utils/SerYL/examples/simple.ycd
+
+Foo:
+  SimpleFoo: seryl.simple.Foo

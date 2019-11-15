@@ -1,6 +1,8 @@
-#include "YCDUnit.h"
+#include "Unit.h"
 
-#include "YCDLoader.h"
+#include "Loader.h"
+#include "Support.h"
+#include "Type.h"
 
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
@@ -10,15 +12,21 @@
 #include <cstdlib>
 
 namespace llvm {
+namespace ycd {
 
-std::unique_ptr<YCDUnit> YCDUnit::load(
+Unit::Unit(const std::string &InFile, StringRef &PkgName)
+    : InputFile(InFile), PackageName(PkgName) {
+  Type::addBuiltinTypes(Types);
+}
+
+std::unique_ptr<Unit> Unit::load(
     const std::string &Filename,
     const std::vector<std::string> &IncludeDirs) {
-  YCDLoader Loader;
+  Loader Loader;
   return Loader.load(Filename, IncludeDirs);
 }
 
-int YCDUnit::writeCpp(const std::string &Basename) const {
+int Unit::writeCpp(const std::string &Basename) const {
   std::string CppHeader = Basename + ".h";
   std::error_code EC;
   raw_fd_ostream HS(CppHeader, EC);
@@ -32,31 +40,39 @@ int YCDUnit::writeCpp(const std::string &Basename) const {
 
   HS << "\n";
 
-  // TODO: Add includes for the imported files.
+  for (const std::string &Import : ImportedFiles) {
+    HS << "#include \"" << StringRef(Import).drop_back(3) << "h\"\n";
+  }
+
+  HS << "\n";
 
   HS << "#include <string>\n";
+  HS << "#include <stdint>\n";
   HS << "#include <vector>\n";
 
   HS << "\n";
 
-  for (const std::string &Part : PackageName) {
+  FQNameParts PkgNameParts;
+  isFullyQualifiedName(PackageName, PkgNameParts);
+  for (const std::string &Part : PkgNameParts) {
     HS << "namespace " << Part << " {\n";
   }
 
   HS << "\n";  
 
-  for (const YCDClass &Class : Classes) {
+  for (const Class &Class : Classes) {
     Class.writeCppDefinition(HS);
     HS << "\n";
   }
 
   HS << "\n";
 
-  for (const std::string &Part: PackageName) {
-    HS << "} // namespace " << Part << "\n";
+  for (auto RI = PkgNameParts.rbegin(); RI != PkgNameParts.rend(); ++RI) {
+    HS << "} // namespace " << *RI << "\n";
   }
 
   return 0;
 }
 
+} // namespace ycd
 } // namespace llvm

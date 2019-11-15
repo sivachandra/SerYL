@@ -3,8 +3,11 @@
 #include "llvm/ADT/StringExtras.h"
 
 namespace llvm {
+namespace ycd {
 
-bool isValidYCDIdentifier(llvm::StringRef Id) {
+const char YCDSuffix[] = ".ycd";
+
+bool isValidIdentifier(llvm::StringRef Id) {
   assert(Id.size() > 0);
 
   for (size_t i = 0; i < Id.size(); ++i) {
@@ -21,16 +24,17 @@ bool isValidYCDIdentifier(llvm::StringRef Id) {
   return true;
 }
 
-bool isFullyQualifiedYCDName(llvm::StringRef FQName, llvm::YCDName &Name) {
-  llvm::SmallVector<llvm::StringRef, 8> Parts;
-  FQName.split(Parts, ".");
-  for (llvm::StringRef P : Parts) {
-    if (!isValidYCDIdentifier(P)) {
+bool isFullyQualifiedName(llvm::StringRef FQName, FQNameParts &Parts) {
+  llvm::SmallVector<llvm::StringRef, 8> RefParts;
+  FQName.split(RefParts, ".");
+  for (llvm::StringRef P : RefParts) {
+    if (!isValidIdentifier(P)) {
       return false;
     }
-    Name.push_back(P);
+    Parts.push_back(P);
   }
   return true;
 }
 
+} // namespace ycd
 } // namespace llvm

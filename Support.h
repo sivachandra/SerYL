@@ -5,16 +5,20 @@
 #include "llvm/ADT/StringRef.h"
 
 namespace llvm {
+namespace ycd {
 
-typedef SmallVector<std::string, 8> YCDName;
+typedef SmallVector<std::string, 8> FQNameParts;
 
 /// Return true if `Id` is a valid YCD identifier.
-bool isValidYCDIdentifier(llvm::StringRef Id);
+bool isValidIdentifier(llvm::StringRef Id);
 
 /// Return true if `FQName` is a valid fully qualified name.
-/// `Name` will be populated with the parts of `FQName`.
-bool isFullyQualifiedYCDName(llvm::StringRef FQName, llvm::YCDName &Name);
+/// `Parts` will be populated with the parts of `FQName`.
+bool isFullyQualifiedName(llvm::StringRef FQName, FQNameParts &Parts);
 
+extern const char YCDSuffix[];
+
+} // namespace ycd
 } // namespace llvm
 
 #endif // LLVM_UTILS_SERYL_SUPPORT_H

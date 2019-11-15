@@ -1,5 +1,7 @@
-#include "YCDUnit.h"
+#include "Support.h"
+#include "Unit.h"
 
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -24,31 +26,26 @@ llvm::cl::opt<std::string> InputFile(
     llvm::cl::desc("<YCD file>"),
     llvm::cl::Required);
 
-const char YCDSuffix[] = ".ycd";
+int SerYLMain() {
+  llvm::StringRef InputFileRef(InputFile);
 
-} // anonymous namespace
-
-namespace llvm {
-
-static int SerYLMain() {
-  StringRef InputFileRef(InputFile);
-
-  if (!InputFileRef.endswith(YCDSuffix)) {
-    errs() << "Input files should have " << YCDSuffix << " suffix.\n";
+  if (!InputFileRef.endswith(llvm::ycd::YCDSuffix)) {
+    llvm::errs() << "Input files should have " << llvm::ycd::YCDSuffix
+                 << " suffix.\n";
     return 1;
   }
 
-  auto Unit = YCDUnit::load(InputFile, ImportPaths);
+  auto U = llvm::ycd::Unit::load(InputFile, ImportPaths);
 
-  StringRef SuffixRef(YCDSuffix);
+  llvm::StringRef SuffixRef(llvm::ycd::YCDSuffix);
   std::string Basename = OutputDir + "/" + 
       std::string(InputFileRef.drop_back(SuffixRef.size()));
-  return Unit->writeCpp(Basename);
+  return U->writeCpp(Basename);
 }
 
-} // namespace llvm
+} // anonymous namespace
 
 int main(int argc, char* argv[]) {
   llvm::cl::ParseCommandLineOptions(argc, argv);
-  return llvm::SerYLMain();
+  return SerYLMain();
 }
