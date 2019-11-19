@@ -46,6 +46,8 @@ int Unit::writeCpp(const std::string &Basename) const {
 
   HS << "\n";
 
+  HS << "#include \"llvm/Support/raw_ostream.h\"\n";
+
   HS << "#include <string>\n";
   HS << "#include <stdint>\n";
   HS << "#include <vector>\n";

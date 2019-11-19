@@ -40,6 +40,7 @@ class Class {
     Fields.emplace_back(Field(Name, Type));
   }
 
+  void emitFieldDumper(llvm::raw_ostream &OS, const std::string &indent);
 public:
 
   void writeCppDefinition(llvm::raw_ostream &OS) const;

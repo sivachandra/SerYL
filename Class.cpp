@@ -32,6 +32,22 @@ void Class::writeCppDefinition(raw_ostream &OS) const {
       OS << "  " << TypeName << " " << "_" << F.Name << ";\n";
     }
   }
+
+  OS << "public:\n";
+  OS << "  void dump(llvm::raw_ostream &OS) {\n";
+  for (auto &F : Fields) {
+    auto TypeKind = F.FieldType->getKind();
+    if (TypeKind == Type::TK_Scalar || TypeKind == Type::TK_String) {
+      OS << "    OS << \"" << F.Name << ": \" << " << "_" << F.Name << " << \"\\n\";" << "\n";
+    } else if (TypeKind == Type::TK_List) {
+      OS << "    OS << \"" << F.Name << ":\" << \"\\n\"" << "\n";
+      OS << "    for (auto &Val : _" << F.Name << ") {\n";
+      OS << "      OS << \"-\" << Val << \"\\n\"" <<  "\n";
+      OS << "    }\n";
+    }
+    
+  }
+  OS << "  }\n";
   OS << "};\n";
 }
 
