@@ -3,6 +3,7 @@
 
 #include "llvm/utils/SerYL/examples/simple.h"
 
+#include "llvm/Support/raw_ostream.h"
 #include <string>
 #include <stdint>
 #include <vector>
@@ -22,7 +23,6 @@ private:
   seryl::simple::Foo _SimpleFoo;
 public:
   void dump(llvm::raw_ostream &OS) {
-    OS << "Foo":
   }
 };
 

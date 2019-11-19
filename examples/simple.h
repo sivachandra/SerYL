@@ -2,6 +2,7 @@
 // Do no edit.
 
 
+#include "llvm/Support/raw_ostream.h"
 #include <string>
 #include <stdint>
 #include <vector>
