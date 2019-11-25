@@ -1,0 +1,12 @@
+
+class(MyClass):
+  __oneof__:
+    MyInt: int
+    MyDouble: double
+
+  enum(Op):
+    - ADD
+    - SUB
+    - MUL
+
+  MyEnumField: Op

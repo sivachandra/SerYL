@@ -60,23 +60,24 @@ void Type::addBuiltinTypes(std::vector<std::unique_ptr<Type>> &TypeVector) {
   TypeVector.emplace_back(std::make_unique<Type>("list<string>", "list<string>", TK_List, false));
 }
 
-StringRef Type::isListType(StringRef TypeName) {
-  StringRef R = TypeName.trim(' ');
+bool Type::isListType(llvm::StringRef TypeName, llvm::StringRef &ElemType) {
+  llvm::StringRef r = TypeName.trim(' ');
   if (!(R.startswith("list") && R.endswith(">"))) {
-    return "";
+    return false;
   }
 
   R = R.drop_front(4).drop_back(1).trim();
   if (!R.startswith("<")) {
-    return "";
+    return false;
   }
 
   R = R.drop_front(1);
   if (isValidIdentifier(R)) {
-    return R;
+    ElemType = R;
+    return true;
   }
 
-  return "";
+  return false;
 }
 
 } // namespace ycd

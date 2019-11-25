@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace llvm {
-namespace ycd {
+namespace seryl {
 
 class Type {
 public:
@@ -17,40 +17,34 @@ public:
     TK_Scalar,
     TK_Class,
     TK_List,
-    TK_String
+    TK_String,
+    TK_Enum
   };
 
 private:
-  std::string Name;
-  std::string FullyQualifiedName;
-  TypeKind Kind;
-  bool DefinedInMainFile;
+  const std::string FullyQualifiedName;
+  const TypeKind Kind;
 
 public:
-  Type(const std::string &N, const std::string &FQName, TypeKind K,
-       bool InMainFile)
-      : Name(N), FullyQualifiedName(FQName), Kind(K),
-        DefinedInMainFile(InMainFile) {}
+  Type(const std::string &FQName, TypeKind K)
+      : FullyQualifiedName(FQName), Kind(K) {}
 
   TypeKind getKind() const { return Kind; }
 
-  /// Return true if this type is define in the main file.
-  bool isDefinedInMainFile() const { return DefinedInMainFile; }
+  void setKind(TypeKind K) { Kind = K; }
 
   const std::string& getFullyQualifiedName() const {
     return FullyQualifiedName;
   }
 
-  std::string getFullyQualifiedCppName() const;
-
-  std::string getInnerMostCppName() const;
+  void setFullyQualifiedName(std::string &N) { FullyQualifiedName = N; }
 
   static void addBuiltinTypes(std::vector<std::unique_ptr<Type>> &TypeVector);
 
-  static StringRef isListType(StringRef TypeName);
+  static bool isListType(StringRef TypeName);
 };
 
-} // namespace ycd
+} // namespace seryl
 } // namespace llvm
 
 #endif // LLVM_UTILS_SERYL_TYPE_H

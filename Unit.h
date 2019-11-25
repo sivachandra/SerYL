@@ -1,8 +1,8 @@
 #ifndef LLVM_UTILS_SERYL_UNIT_H
 #define LLVM_UTILS_SERYL_UNIT_H
 
-#include "Support.h"
 #include "Class.h"
+#include "Support.h"
 #include "Type.h"
 
 #include "llvm/ADT/SmallVector.h"
@@ -16,13 +16,14 @@ namespace llvm {
 namespace ycd {
 
 class Unit {
-  friend class Loader;
-
   std::string InputFile;
   std::string PackageName;
 
-  // List of classes declared in the main .ycd file.
+  // List of toplevel classes declared in the main .ycd file.
   std::vector<Class> Classes;
+
+  // List of toplevel enums declared in the main .ycd file.
+  std::vector<Enum> Enums;
 
   // List of types in the main .ycd file as well as in the imported files.
   std::vector<std::unique_ptr<Type>> Types;
@@ -34,12 +35,38 @@ class Unit {
 
 public:
   
-  static std::unique_ptr<Unit> load(
+  static std::unique_ptr<Unit> read(
       const std::string &InputFile,
       const std::vector<std::string> &IncludeDirs);
 
-  int writeCpp(const std::string &Basename) const;
+  std::string &getPackageName() const {
+    return PackageName;
+  }
+
+  std::string &getFilename() const {
+    return InputFile;
+  }
 };
+
+template <>
+Unit::iterator<Class> Unit::begin<Class>() {
+  return Classes.begin();
+}
+
+template <>
+Unit::const_iterator<Class> Unit::begin<Class>() const {
+  return Classes.begin();
+}
+
+template <>
+Unit::iterator<Enum> Unit::begin<Enum>() {
+  return Enums.begin();
+}
+
+template <>
+Unit::const_iterator<Enum> Unit::begin<Enum>() const {
+  return Enums.begin();
+}
 
 } // namespace ycd
 } // namespace llvm

@@ -3,7 +3,7 @@
 #include "llvm/ADT/StringExtras.h"
 
 namespace llvm {
-namespace ycd {
+namespace seryl {
 
 const char YCDSuffix[] = ".ycd";
 
@@ -36,5 +36,5 @@ bool isFullyQualifiedName(llvm::StringRef FQName, FQNameParts &Parts) {
   return true;
 }
 
-} // namespace ycd
+} // namespace seryl
 } // namespace llvm
