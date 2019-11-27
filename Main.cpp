@@ -1,3 +1,4 @@
+#include "Generators.h"
 #include "Support.h"
 #include "Unit.h"
 
@@ -7,43 +8,42 @@
 
 #include <string>
 
-namespace {
-
-llvm::cl::opt<std::string> OutputDir(
+static llvm::cl::opt<std::string> OutputDir(
     "dst",
     llvm::cl::desc("The full path to the output directory. "
                    "Defaults to current directory."),
     llvm::cl::value_desc("path"),
     llvm::cl::Required);
 
-llvm::cl::list<std::string> ImportPaths(
+static llvm::cl::list<std::string> ImportPaths(
     "I",
     llvm::cl::desc("Paths in which files to be imported will be looked up."),
     llvm::cl::value_desc("path"));
 
-llvm::cl::opt<std::string> InputFile(
+static llvm::cl::opt<std::string> InputFile(
     llvm::cl::Positional,
     llvm::cl::desc("<YCD file>"),
     llvm::cl::Required);
 
-int SerYLMain() {
+static int SerYLMain() {
   llvm::StringRef InputFileRef(InputFile);
 
-  if (!InputFileRef.endswith(llvm::ycd::YCDSuffix)) {
-    llvm::errs() << "Input files should have " << llvm::ycd::YCDSuffix
+  if (!InputFileRef.endswith(llvm::seryl::YCDSuffix)) {
+    llvm::errs() << "Input files should have " << llvm::seryl::YCDSuffix
                  << " suffix.\n";
     return 1;
   }
 
-  auto U = llvm::ycd::Unit::load(InputFile, ImportPaths);
-
+  auto U = llvm::seryl::Unit::read(InputFile, ImportPaths);
+  GenCpp(U.get(), OutputDir);
+/*
   llvm::StringRef SuffixRef(llvm::ycd::YCDSuffix);
   std::string Basename = OutputDir + "/" + 
       std::string(InputFileRef.drop_back(SuffixRef.size()));
   return U->writeCpp(Basename);
+*/
+  return 0;
 }
-
-} // anonymous namespace
 
 int main(int argc, char* argv[]) {
   llvm::cl::ParseCommandLineOptions(argc, argv);

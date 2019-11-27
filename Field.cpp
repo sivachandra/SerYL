@@ -4,6 +4,7 @@ namespace llvm {
 namespace seryl {
 
 bool Field::isOneofField() {
+  // TODO: Fix this function
   return false;
 }
 

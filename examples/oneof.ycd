@@ -1,6 +1,6 @@
 
 class(MyClass):
-  __oneof__:
+  __oneof__(GroupOne):
     MyInt: int
     MyDouble: double
 

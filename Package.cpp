@@ -6,7 +6,7 @@
 namespace llvm {
 namespace seryl {
 
-bool Package::lookupType(llvm::StringRef TypeName, Type &T) {
+bool Package::lookupType(llvm::StringRef TypeName, Type &T) const {
   FQNameParts Parts;
   bool IsFQ = isFullyQualifiedName(TypeName, Parts);
 
@@ -17,7 +17,7 @@ bool Package::lookupType(llvm::StringRef TypeName, Type &T) {
       T.setKind(Type::TK_Class);
       return true;
     }
-    if (IsFQ && NCName == Parts[0]) {
+    if (IsFQ && ClassName == Parts[0]) {
       Type NT;
       llvm::ArrayRef<std::string> PartsRef(Parts);
       PartsRef = PartsRef.drop_front();
@@ -40,6 +40,36 @@ bool Package::lookupType(llvm::StringRef TypeName, Type &T) {
   }
 
   return getParentScope()->lookupType(TypeName, T);
+}
+
+template <>
+Class::iterator<Class> Package::begin<Class>() {
+  return Classes.begin();
+}
+
+template <>
+Class::const_iterator<Class> Package::begin<Class>() const {
+  return Classes.begin();
+}
+
+template <>
+Class::const_iterator<Class> Package::end<Class>() const {
+  return Classes.end();
+}
+
+template <>
+Class::iterator<Enum> Package::begin<Enum>() {
+  return Enums.begin();
+}
+
+template <>
+Class::const_iterator<Enum> Package::begin<Enum>() const {
+  return Enums.begin();
+}
+
+template <>
+Class::const_iterator<Enum> Package::end<Enum>() const {
+  return Enums.end();
 }
 
 } // namespace seryl

@@ -1,5 +1,7 @@
 #include "Class.h"
 
+#include "Enum.h"
+
 static const char ClassPrefix[] = "class(";
 static size_t ClassPrefixSize = llvm::StringRef(ClassPrefix).size();
 static const char ClassSuffix[] = ")";
@@ -8,11 +10,11 @@ static size_t ClassSuffixSize = llvm::StringRef(ClassSuffix).size();
 namespace llvm {
 namespace seryl {
 
-std::unique_ptr<Class> Class::readClass(llvm::StringRef FQName,
+std::unique_ptr<Class> Class::readClass(llvm::StringRef ClassName,
                                         Scope *ParScope,
                                         llvm::yaml::Node &ClassBody,
                                         YStreamErrReporter &ER) {
-  if (ClassBody.getType != llvm::yaml::Node::NK_MappingNode) {
+  if (ClassBody.getType() != llvm::yaml::Node::NK_Mapping) {
     ER.printFatalError(&ClassBody, "Class body should be a mapping.");
   }
 
@@ -23,17 +25,17 @@ std::unique_ptr<Class> Class::readClass(llvm::StringRef FQName,
   // out on duplicate member names.
   std::unordered_set<std::string> MemberNames;
 
-  auto C = std::make_unique<Class>(FQName);
+  auto C = std::make_unique<Class>(ClassName, ParScope);
 
   for (llvm::yaml::KeyValueNode &KVNode : *ClassBodyAsMapping) {
     llvm::yaml::Node *Key = KVNode.getKey();
     llvm::yaml::Node *Value = KVNode.getValue();
 
-    if (!Key->getType() != llvm::yaml::Node::NK_Scalar)
+    if (Key->getType() != llvm::yaml::Node::NK_Scalar)
       ER.printFatalError(Key, "Class body keys should be scalars.");
 
     llvm::StringRef KeyStr =
-        llvm::dyn_cast<llvm::yaml::ScalarNode>(Key)->getValue();
+        llvm::dyn_cast<llvm::yaml::ScalarNode>(Key)->getRawValue();
     if (MemberNames.find(KeyStr) != MemberNames.end()) {
       ER.printFatalError(
           Key, "Class member with name " + KeyStr + " aleady exists.");
@@ -44,50 +46,49 @@ std::unique_ptr<Class> Class::readClass(llvm::StringRef FQName,
       if (!isValidIdentifier(EnumName))
         ER.printFatalError(Key, "Invalid enum name");
 
-      std::string FQEnumName = C->FullyQualifiedName + std::string(EnumName);
-      C->NestedEnums.emplace_back(Enum::readEnum(FQEnumName, *Value, ER));
-      C->TypeNameMap.emplace(EnumName, Type::TK_Enum);
+      C->NestedEnums.emplace_back(Enum::readEnum(EnumName, C.get(), *Value, ER));
+      MemberNames.insert(EnumName);
     } else if (Class::isClassHeader(KeyStr)) {
-      llvm::StringRef ClassName = Class::getClassName(KeyStr);
-      if (!isValidIdentifier(ClassName))
+      llvm::StringRef NestedClassName = Class::getClassName(KeyStr);
+      if (!isValidIdentifier(NestedClassName))
         ER.printFatalError(Key, "Invalid class name");
 
-      std::string FQClassName = C->FullyQualifiedName + std::string(ClassName);
-      C->NestedClasses.emplace_back(Class::readClass(FQClassName, *Value, ER));
-      C->TypeNameMap.emplace(ClassName, Type::TK_Class);
+      C->NestedClasses.emplace_back(
+          Class::readClass(NestedClassName, C.get(), *Value, ER));
+      MemberNames.insert(NestedClassName);
     } else if (Field::isOneofField(KeyStr)) {
       ; // TODO: Parse and setup oneof fields.
     } else {
       // This is a normal field of the kind:
       //   <field name> : <field type>
-      if (!isValidIdentifier(KeyStr)
+      if (!isValidIdentifier(KeyStr))
         ER.printFatalError(Key, "Invalid field name.");
 
       if (Value->getType() != llvm::yaml::Node::NK_Scalar)
         ER.printFatalError(Value, "Field type should be a simple string value.");
 
       llvm::StringRef TypeName =
-        llvm::dyn_cast<llvm::yaml::ScalarNode>(Value)->getValue();
+        llvm::dyn_cast<llvm::yaml::ScalarNode>(Value)->getRawValue();
 
-      llvm::StrinRef ElemTypeName;
+      llvm::StringRef ElemTypeName;
       Type T;
-      if (Type::isListType(ValStr, ElemTypeName)) {
-        if (!Type::isBuiltinType(ElemTypeName, T) {
-          if (!lookupType(ElemTypeName, T))
+      if (Type::isListType(TypeName, ElemTypeName)) {
+        if (!Type::isBuiltinType(ElemTypeName, T)) {
+          if (!C->lookupType(ElemTypeName, T))
             ER.printFatalError(Value, "Unknown field type.");
         }
         T.setKind(Type::TK_List);
       } else {
         if (!isValidIdentifier(TypeName))
           ER.printFatalError(Value, "Invalid field type.");
-        if (!Type::isBuiltinType(ElemTypeName, T) {
-          if (!lookupType(TypeName, T))
+        if (!Type::isBuiltinType(TypeName, T)) {
+          if (!C->lookupType(TypeName, T))
             ER.printFatalError(Value, "Unknown field type.");
         }
       }
-      Field F = std::make_unique<Field>();
-      F.NameTypeMap.insert(KeyStr, T);
-      FieldVector.emplace_back(std::move(F));
+      auto F = std::make_unique<Field>();
+      F->FieldMap.insert({KeyStr, T});
+      C->Fields.emplace_back(std::move(F));
     }
   }
 
@@ -95,7 +96,7 @@ std::unique_ptr<Class> Class::readClass(llvm::StringRef FQName,
 }
 
 bool Class::isClassHeader(llvm::StringRef H) {
-  return H.starts_with(ClassPrefix) and H.ends_with(ClassSuffix);
+  return H.startswith(ClassPrefix) and H.endswith(ClassSuffix);
 }
 
 llvm::StringRef Class::getClassName(llvm::StringRef H) {
@@ -104,15 +105,7 @@ llvm::StringRef Class::getClassName(llvm::StringRef H) {
   return H.drop_front(ClassPrefixSize).drop_back(ClassSuffixSize);
 }
 
-const Type *Class:getType(llvm::StringRef TypeName) {
-  auto IT = TypeMap.find(TypeName);
-  if (IT == TypeMap.end()) {
-    return nullptr;
-  }
-  return IT->second;
-}
-
-bool Class::lookupType(llvm::StringRef TypeName, Type &T) {
+bool Class::lookupType(llvm::StringRef TypeName, Type &T) const {
   FQNameParts Parts;
   bool IsFQ = isFullyQualifiedName(TypeName, Parts);
 
@@ -149,54 +142,35 @@ bool Class::lookupType(llvm::StringRef TypeName, Type &T) {
   return getParentScope()->lookupType(TypeName, T);
 }
 
-/*
-void Class::writeCppDefinition(raw_ostream &OS) const {
-  OS << "class " << Name << "{\n";
-  printf("Writing class %s\n", Name.data());
-  for (auto &F : Fields) {
-    const Type *T = F.FieldType;
-    auto TypeKind = T->getKind();
-    std::string TypeName = T->getFullyQualifiedCppName();
-    if (TypeKind == Type::TK_Scalar) {
-      OS << "public:\n";
-      OS << "  " << TypeName << " get_" << F.Name << "() const {\n";
-      OS << "    return _" << F.Name << ";\n";
-      OS << "  }\n";
-      OS << "  void set_" << F.Name << "(" << TypeName << " " << F.Name << ") {\n";
-      OS << "    _" << F.Name << " = " << F.Name << ";\n";
-      OS << "  }\n";
-      OS << "private:\n";
-      OS << "  " << TypeName << " " << "_" << F.Name << ";\n";
-    } else {
-      OS << "public:\n";
-      OS << "  const " << TypeName << " &get_" << F.Name << "() const {\n";
-      OS << "    return _" << F.Name << ";\n";
-      OS << "  }\n";
-      OS << "  " << TypeName << " &get_" << F.Name << "() {\n";
-      OS << "    return _" << F.Name << ";\n";
-      OS << "  }\n";
-      OS << "private:\n";
-      OS << "  " << TypeName << " " << "_" << F.Name << ";\n";
-    }
-  }
-
-  OS << "public:\n";
-  OS << "  void dump(llvm::raw_ostream &OS) {\n";
-  for (auto &F : Fields) {
-    auto TypeKind = F.FieldType->getKind();
-    if (TypeKind == Type::TK_Scalar || TypeKind == Type::TK_String) {
-      OS << "    OS << \"" << F.Name << ": \" << " << "_" << F.Name << " << \"\\n\";" << "\n";
-    } else if (TypeKind == Type::TK_List) {
-      OS << "    OS << \"" << F.Name << ":\" << \"\\n\"" << "\n";
-      OS << "    for (auto &Val : _" << F.Name << ") {\n";
-      OS << "      OS << \"-\" << Val << \"\\n\"" <<  "\n";
-      OS << "    }\n";
-    }
-    
-  }
-  OS << "  }\n";
-  OS << "};\n";
+template <>
+Class::iterator<Field> Class::begin<Field>() {
+  return Fields.begin();
 }
-*/
+
+template <>
+Class::const_iterator<Field> Class::begin<Field>() const {
+  return Fields.begin();
+}
+
+template <>
+Class::iterator<Class> Class::begin<Class>() {
+  return NestedClasses.begin();
+}
+
+template <>
+Class::const_iterator<Class> Class::begin<Class>() const {
+  return NestedClasses.begin();
+}
+
+template <>
+Class::iterator<Enum> Class::begin<Enum>() {
+  return NestedEnums.begin();
+}
+
+template <>
+Class::const_iterator<Enum> Class::begin<Enum>() const {
+  return NestedEnums.begin();
+}
+
 } // namespace seryl
 } // namespace llvm

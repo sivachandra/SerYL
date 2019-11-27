@@ -1,4 +1,6 @@
+__package__: seryl.examples.enum
+
 enum(MyEnum):
-  - A
+  - A(10)
   - B
   - C

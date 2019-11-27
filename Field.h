@@ -1,6 +1,8 @@
 #ifndef LLVM_UTILS_SERYL_FIELD_H
 #define LLVM_UTILS_SERYL_FIELD_H
 
+#include "Type.h"
+
 #include <string>
 #include <unordered_map>
 
@@ -15,13 +17,11 @@ private:
   // We keep a map to handle __oneof__ fields.
   NameTypeMap FieldMap;
 
-  NameTypeMap(const NameTypeMap &) = delete;
-
-  Field() {}
-
   Field(const Field &) = delete;
 
 public:
+  Field() {}
+
   typedef NameTypeMap::iterator iterator;
   typedef NameTypeMap::const_iterator const_iterator;
 
@@ -32,18 +32,22 @@ public:
   }
 
   const_iterator begin() const {
-    FieldMap.begin();
+    return FieldMap.begin();
   }
 
   iterator end() {
-    FieldMap.end();
+    return FieldMap.end();
   }
 
   const_iterator end() const {
-    FieldMap.end();
+    return FieldMap.end();
   }
 
-  bool isOneof() const { return NameTypeMap.size() > 1; }
+  bool isOneof() const { return FieldMap.size() > 1; }
+
+  static bool isOneofField(llvm::StringRef FieldStr) {
+    return false;
+  }
 
 };
 

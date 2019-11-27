@@ -2,6 +2,9 @@
 #define LLVM_UTILS_SERYL_UNIT_H
 
 #include "Class.h"
+#include "Enum.h"
+#include "Package.h"
+#include "Scope.h"
 #include "Support.h"
 #include "Type.h"
 
@@ -13,40 +16,39 @@
 #include <vector>
 
 namespace llvm {
-namespace ycd {
+namespace seryl {
 
 class Unit : public Scope {
   std::string InputFile;
   std::string MainPackageName;
+  Package *MainPackage;
 
   std::unordered_map<std::string, std::unique_ptr<Package>> Packages;
-
-  // List of toplevel classes declared in the main .ycd file.
-  std::vector<Class> Classes;
-
-  // List of toplevel enums declared in the main .ycd file.
-  std::vector<Enum> Enums;
-
-  // List of types in the main .ycd file as well as in the imported files.
-  std::vector<std::unique_ptr<Type>> Types;
 
   // List of imports
   std::vector<std::string> ImportedFiles;
 
-  explicit Unit(const std::string &InFile, StringRef &PkgName)
-      : Scope(nullptr), InputFile(InFile), MainPackageName(PkgName) {}
-
 public:
   
+  explicit Unit(const std::string &InFile, StringRef &PkgName)
+      : Scope(nullptr), InputFile(InFile), MainPackageName(PkgName) {
+    auto Pair = Packages.emplace(PkgName, std::make_unique<Package>(PkgName, this));
+    MainPackage = Pair.first->second.get();
+  }
+
   static std::unique_ptr<Unit> read(
       const std::string &InputFile,
       const std::vector<std::string> &IncludeDirs);
 
-  std::string &getMainPackageName() const {
+  const std::string &getMainPackageName() const {
     return MainPackageName;
   }
 
-  std::string &getFilename() const {
+  const Package *getMainPackage() const {
+    return MainPackage;
+  }
+
+  const std::string &getFilename() const {
     return InputFile;
   }
 
@@ -61,27 +63,7 @@ public:
   }
 };
 
-template <>
-Unit::iterator<Class> Unit::begin<Class>() {
-  return Classes.begin();
-}
-
-template <>
-Unit::const_iterator<Class> Unit::begin<Class>() const {
-  return Classes.begin();
-}
-
-template <>
-Unit::iterator<Enum> Unit::begin<Enum>() {
-  return Enums.begin();
-}
-
-template <>
-Unit::const_iterator<Enum> Unit::begin<Enum>() const {
-  return Enums.begin();
-}
-
-} // namespace ycd
+} // namespace seryl
 } // namespace llvm
 
 #endif // LLVM_UTILS_SERYL_UNIT_H

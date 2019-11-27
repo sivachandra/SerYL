@@ -1,9 +1,9 @@
-__package__: seryl.simple
+__package__: seryl.examples.simple
 
-Foo:
+class(Foo):
   MyInt: int
   MyString: string
 
-Bar:
+class(Bar):
   MyFoo: Foo
   MyDoubleList: list<double>

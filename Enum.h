@@ -1,7 +1,10 @@
 #ifndef LLVM_UTILS_SERYL_ENUM_H
-#define LLMV_UTILS_SERYL_ENUM_H
+#define LLVM_UTILS_SERYL_ENUM_H
 
+#include "Scope.h"
 #include "Support.h"
+
+#include "llvm/Support/YAMLParser.h"
 
 #include <cstdint>
 #include <memory>
@@ -34,13 +37,11 @@ public:
     bool HasValue;
     std::int32_t Value;
 
-    Item(const std::string &N, bool HasVal, std::int32_t V = 0)
+  public:
+    Item(llvm::StringRef N, bool HasVal, std::int32_t V = 0)
         : Name(N), HasValue(HasVal), Value(V) {
     }
 
-    Item(const Item&) = delete;
-
-  public:
     const std::string &getName() const {
       return Name;
     }
@@ -57,15 +58,23 @@ public:
 private:
   friend class Unit;
 
+  std::string Name;
   std::string FullyQualifiedName;
   std::vector<Item> Items;
 
   Enum(const Enum&) = delete;
-  explicit Enum(const std::string &FQName) : FullyQualifiedName(FQName) {}
 
 public:
 
-  static std::unique_ptr<Enum> readEnum(const std::string &FQName,
+  explicit Enum(const std::string &N, Scope *PS)
+      : Name(N) {
+    assert(PS != nullptr &&
+           "An enum definition should always have a parent scope.");
+    FullyQualifiedName = PS->getFullyQualifiedName() + "." + Name;
+  }
+
+  static std::unique_ptr<Enum> readEnum(llvm::StringRef N,
+                                        Scope *ParScope,
                                         llvm::yaml::Node &EnumBody,
                                         YStreamErrReporter &ER);
 
@@ -78,15 +87,21 @@ public:
     return FullyQualifiedName;
   }
 
-  using iterator = std::Vector<Item>::iterator;
-  using const_iterator = std::Vector<Item>::const_iterator;
+  const std::string &getName() const {
+    return Name;
+  }
+
+  using iterator = std::vector<Item>::iterator;
+  using const_iterator = std::vector<Item>::const_iterator;
 
   iterator begin() { return Items.begin(); }
   const_iterator begin() const { return Items.begin(); }
+  iterator end() { return Items.end(); }
+  const_iterator end() const { return Items.end(); }
 
 };
 
 } // namespace seryl
 } // namespace llvm
 
-#endif // LLMV_UTILS_SERYL_ENUM_H
+#endif // LLVM_UTILS_SERYL_ENUM_H

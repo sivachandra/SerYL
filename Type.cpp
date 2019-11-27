@@ -3,65 +3,20 @@
 
 #include "llvm/ADT/StringExtras.h"
 
+static const char BoolType[] = "bool";
+static const char IntType[] = "int";
+static const char Int8Type[] = "int8";
+static const char Int16Type[] = "int16";
+static const char Int32Type[] = "int32";
+static const char Int64Type[] = "int64";
+static const char DoubleType[] = "double";
+static const char StringType[] = "string";
+
 namespace llvm {
-namespace ycd {
-
-std::string Type::getFullyQualifiedCppName() const {
-  if (Kind == TK_Scalar) {
-    return Name;
-  } else if (Kind == TK_String) {
-    return "std::string";
-  }
-
-  StringRef FQNameRef = FullyQualifiedName;
-  if (Kind == TK_List)
-    FQNameRef = FQNameRef.drop_front(5).drop_back(1);
-
-  FQNameParts Parts;
-  bool B = isFullyQualifiedName(FQNameRef, Parts);
-  assert(B && "The fully qualifed name of Type is not fully qualifed.");
-
-  std::string FQName = join(Parts.begin(), Parts.end(), "::");
-  if (Kind == TK_List) {
-    FQName = std::string("std::vector<") + FQName + ">";
-  }
-  return FQName;
-}
-
-std::string Type::getInnerMostCppName() const {
-    switch (Kind) {
-    case TK_Scalar:
-      return Name;
-    case TK_String:
-      return "std::string";
-    case TK_Class:
-      return Name;
-    case TK_List:
-      return std::string("std::vector<") + Name + ">";
-    default:
-      return "";
-    }
-}
-
-void Type::addBuiltinTypes(std::vector<std::unique_ptr<Type>> &TypeVector) {
-  TypeVector.emplace_back(std::make_unique<Type>("int8", "int8", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<int8>", "list<int8>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("int16", "int16", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<int16>", "list<int16>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("int32", "int32", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<int32>", "list<int32>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("int64", "int64", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<int64>", "list<int64>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("int", "int", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<int>", "list<int>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("double", "double", TK_Scalar, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<double>", "list<double>", TK_List, false));
-  TypeVector.emplace_back(std::make_unique<Type>("string", "string", TK_String, false));
-  TypeVector.emplace_back(std::make_unique<Type>("list<string>", "list<string>", TK_List, false));
-}
+namespace seryl {
 
 bool Type::isListType(llvm::StringRef TypeName, llvm::StringRef &ElemType) {
-  llvm::StringRef r = TypeName.trim(' ');
+  llvm::StringRef R = TypeName.trim(' ');
   if (!(R.startswith("list") && R.endswith(">"))) {
     return false;
   }
@@ -80,5 +35,60 @@ bool Type::isListType(llvm::StringRef TypeName, llvm::StringRef &ElemType) {
   return false;
 }
 
-} // namespace ycd
+bool Type::isBuiltinType(llvm::StringRef TypeName, Type &T) {
+  if (TypeName == IntType) {
+    T.FullyQualifiedName = IntType;
+    T.Kind = TK_Int;
+    return true;
+  } else if (TypeName == Int8Type) {
+    T.FullyQualifiedName = Int8Type;
+    T.Kind = TK_Int8;
+    return true;
+  } else if (TypeName == Int16Type) {
+    T.FullyQualifiedName = Int16Type;
+    T.Kind = TK_Int16;
+    return true;
+  } else if (TypeName == Int32Type) {
+    T.FullyQualifiedName = Int32Type;
+    T.Kind = TK_Int32;
+    return true;
+  } else if (TypeName == Int64Type) {
+    T.FullyQualifiedName = Int64Type;
+    T.Kind = TK_Int64;
+    return true;
+  } else if (TypeName == StringType) {
+    T.FullyQualifiedName = StringType;
+    T.Kind = TK_String;
+    return true;
+  } else if (TypeName == DoubleType) {
+    T.FullyQualifiedName = DoubleType;
+    T.Kind = TK_Double;
+    return true;
+  } else if (TypeName == BoolType) {
+    T.FullyQualifiedName = BoolType;
+    T.Kind = TK_Bool;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Type::isScalarType(const Type &T) {
+  const TypeKind K = T.getKind();
+  switch (K) {
+  case TK_Bool:
+  case TK_Double:
+  case TK_Int:
+  case TK_Int8:
+  case TK_Int16:
+  case TK_Int32:
+  case TK_Int64:
+  case TK_Enum:
+    return true;
+  default:
+    return false;
+  }
+}
+
+} // namespace seryl
 } // namespace llvm

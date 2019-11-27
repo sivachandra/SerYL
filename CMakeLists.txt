@@ -3,14 +3,22 @@ add_llvm_utility(
   Main.cpp
   Class.cpp
   Class.h
-  Loader.cpp
-  Loader.h
+  Enum.cpp
+  Enum.h
+  Field.cpp
+  Field.h
+  Generators.h
+  Package.cpp
+  Package.h
+  Scope.h
+  Support.cpp
+  Support.h
   Type.cpp
   Type.h
   Unit.cpp
   Unit.h
-  Support.cpp
-  Support.h
+
+  GenCpp.cpp
 )
 
 target_link_libraries(seryl PRIVATE LLVMSupport)

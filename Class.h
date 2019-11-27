@@ -7,6 +7,7 @@
 #include "Type.h"
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/YAMLParser.h"
 
 #include <memory>
 #include <string>
@@ -16,24 +17,16 @@
 namespace llvm {
 namespace seryl {
 
+class Enum;
+
 class Class : public Scope {
 
   std::string Name;
   std::string FullyQualifiedName;
 
-  std::vector<std::unique_ptr<Field>> FieldVector;
+  std::vector<std::unique_ptr<Field>> Fields;
   std::vector<std::unique_ptr<Class>> NestedClasses;
   std::vector<std::unique_ptr<Enum>> NestedEnums;
-
-  // Map of types defined within the class to the kind of the type. These
-  // consist of the nested  classes and enums defined within this class.
-  // The keys of this map are local names of the types.
-  std::unordered_map<std::string, Type::TypeKind> TypeNameMap;
-
-  explicit Class(StringRef N, Scope *PS) : Scope(PS), Name(N) {
-    if (Scope != nullptr) {
-      FullyQualifiedName = Scope->getFullyQualifiedName() + "." + Name;
-  }
 
   void emitFieldDumper(llvm::raw_ostream &OS, const std::string &indent);
 
@@ -41,14 +34,20 @@ class Class : public Scope {
 
 public:
 
-  static std::unique_ptr<Class> readClass(llvm::StringRef &Name,
+  Class(StringRef N, Scope *PS) : Scope(PS), Name(N) {
+    assert(PS != nullptr &&
+           "A class definition should always have a parent scope.");
+    FullyQualifiedName = PS->getFullyQualifiedName() + "." + Name;
+  }
+
+  static std::unique_ptr<Class> readClass(llvm::StringRef N,
                                           Scope *ParScope,
-                                          llvm::yaml::Node &N,
+                                          llvm::yaml::Node &Body,
                                           YStreamErrReporter &ER);
 
   bool lookupType(llvm::StringRef TypeName, Type &T) const override;
 
-  const std::string &getName() const { return Name; }
+  const std::string &getName() const override { return Name; }
 
   static bool isClassHeader(llvm::StringRef H);
 
@@ -60,15 +59,11 @@ public:
     return FullyQualifiedName;
   }
 
-  const Type *getType(llvm::StringRef TypeName) override;
-  
   template <typename T>
-  using iterator = std::vector<std::unique_ptr<Class>>::iterator;
+  using iterator = typename std::vector<std::unique_ptr<T>>::iterator;
 
   template <typename T>
-  using const_iterator = std::vector<std::unique_ptr<Class>>::const_iterator;
-
-  std::string &getName() const { return Name; }
+  using const_iterator = typename std::vector<std::unique_ptr<T>>::const_iterator;
 
   template <typename T>
   iterator<T> begin(); 
@@ -82,36 +77,6 @@ public:
   template <typename T>
   const_iterator<T> end() const;
 };
-
-template <>
-Class::iterator<Field> Class::begin<Field>() {
-  return Classes.begin();
-}
-
-template <>
-Class::const_iterator<Field> Class::begin<Field>() const {
-  return Classes.begin();
-}
-
-template <>
-Class::iterator<Class> Class::begin<Class>() {
-  return Classes.begin();
-}
-
-template <>
-Class::const_iterator<Class> Class::begin<Class>() const {
-  return Classes.begin();
-}
-
-template <>
-Class::iterator<Enum> Class::begin<Enum>() {
-  return Enums.begin();
-}
-
-template <>
-Class::const_iterator<Enum> Class::begin<Enum>() const {
-  return Enums.begin();
-}
 
 } // namespace seryl
 } // namespace llvm
