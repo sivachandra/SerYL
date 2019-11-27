@@ -12,7 +12,7 @@ class Scope {
 public:
   explicit Scope(Scope *P) : ParentScope(P) {}
 
-  virtual const bool lookupType(llvm::StringRef TypeName) const = 0;
+  virtual bool lookupType(llvm::StringRef TypeName, Type &T) const = 0;
   virtual const std::string &getFullyQualifiedName() const = 0;
   virtual const std::string &getName() const = 0;
 

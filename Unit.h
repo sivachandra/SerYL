@@ -15,9 +15,11 @@
 namespace llvm {
 namespace ycd {
 
-class Unit {
+class Unit : public Scope {
   std::string InputFile;
-  std::string PackageName;
+  std::string MainPackageName;
+
+  std::unordered_map<std::string, std::unique_ptr<Package>> Packages;
 
   // List of toplevel classes declared in the main .ycd file.
   std::vector<Class> Classes;
@@ -31,7 +33,8 @@ class Unit {
   // List of imports
   std::vector<std::string> ImportedFiles;
 
-  explicit Unit(const std::string &InFile, StringRef &PkgName);
+  explicit Unit(const std::string &InFile, StringRef &PkgName)
+      : Scope(nullptr), InputFile(InFile), MainPackageName(PkgName) {}
 
 public:
   
@@ -39,12 +42,22 @@ public:
       const std::string &InputFile,
       const std::vector<std::string> &IncludeDirs);
 
-  std::string &getPackageName() const {
-    return PackageName;
+  std::string &getMainPackageName() const {
+    return MainPackageName;
   }
 
   std::string &getFilename() const {
     return InputFile;
+  }
+
+  bool lookupType(llvm::StringRef TypeName, Type &T) const override;
+
+  const std::string &getName() const override {
+    return InputFile;
+  }
+
+  const std::string &getFullyQualifiedName() const override {
+    return MainPackageName;
   }
 };
 

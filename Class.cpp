@@ -113,8 +113,40 @@ const Type *Class:getType(llvm::StringRef TypeName) {
 }
 
 bool Class::lookupType(llvm::StringRef TypeName, Type &T) {
+  FQNameParts Parts;
+  bool IsFQ = isFullyQualifiedName(TypeName, Parts);
+
   // Within this class, the types are classes and enums.
-  
+  for (auto &NC : NestedClasses) {
+    const std::string &NCName = NC->getName();
+    if (NCName == TypeName) {
+      T.setFullyQualifiedName(NC->getFullyQualifiedName());
+      T.setKind(Type::TK_Class);
+      return true;
+    }
+    if (IsFQ && NCName == Parts[0]) {
+      Type NT;
+      llvm::ArrayRef<std::string> PartsRef(Parts);
+      PartsRef = PartsRef.drop_front();
+      std::string InnerName;
+      for (const std::string &P : PartsRef) {
+        InnerName += P;
+      }
+      if (NC->lookupType(InnerName, NT)) {
+        return true;
+      }
+    }
+  }
+
+  for (auto &NE : NestedEnums) {
+    if (NE->getName() == TypeName) {
+      T.setFullyQualifiedName(NE->getFullyQualifiedName());
+      T.setKind(Type::TK_Enum);
+      return true;
+    }
+  }
+
+  return getParentScope()->lookupType(TypeName, T);
 }
 
 /*

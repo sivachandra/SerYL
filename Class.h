@@ -48,6 +48,8 @@ public:
 
   bool lookupType(llvm::StringRef TypeName, Type &T) const override;
 
+  const std::string &getName() const { return Name; }
+
   static bool isClassHeader(llvm::StringRef H);
 
   // The caller should check if the returned name is a valid identifier.
