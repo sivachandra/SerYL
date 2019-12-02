@@ -1,4 +1,4 @@
-__package__: seryl.examples.enum
+__package__: seryl.examples.my_enum
 
 enum(MyEnum):
   - A(10)

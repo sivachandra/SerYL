@@ -1,0 +1,15 @@
+__package__: seryl.examples.nested
+
+class(MyClass):
+  enum(NestedEnum):
+    - A(101)
+    - B
+    - C
+
+  class(NestedClass):
+    IntField: int
+    EnumField: NestedEnum
+
+  StringField: string
+  DoubleField: double
+

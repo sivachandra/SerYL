@@ -92,6 +92,7 @@ std::unique_ptr<Class> Class::readClass(llvm::StringRef ClassName,
     }
   }
 
+  C->Complete = true;
   return C;
 }
 
@@ -150,6 +151,12 @@ Class::iterator<Field> Class::begin<Field>() {
 template <>
 Class::const_iterator<Field> Class::begin<Field>() const {
   return Fields.begin();
+}
+
+template <> Class::iterator<Field> Class::end<Field>() { return Fields.end(); }
+
+template <> Class::const_iterator<Field> Class::end<Field>() const {
+  return Fields.end();
 }
 
 template <>
