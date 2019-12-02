@@ -36,12 +36,7 @@ static int SerYLMain() {
 
   auto U = llvm::seryl::Unit::read(InputFile, ImportPaths);
   GenCpp(U.get(), OutputDir);
-/*
-  llvm::StringRef SuffixRef(llvm::ycd::YCDSuffix);
-  std::string Basename = OutputDir + "/" + 
-      std::string(InputFileRef.drop_back(SuffixRef.size()));
-  return U->writeCpp(Basename);
-*/
+
   return 0;
 }
 
