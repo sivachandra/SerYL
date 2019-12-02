@@ -71,6 +71,7 @@ std::unique_ptr<Enum> Enum::readEnum(llvm::StringRef Name,
     E->Items.emplace_back(ItemName, HasVal, Val);
   }
 
+  E->Complete = true;
   return E;
 }
 

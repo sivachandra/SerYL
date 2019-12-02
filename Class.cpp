@@ -163,6 +163,16 @@ Class::const_iterator<Class> Class::begin<Class>() const {
 }
 
 template <>
+Class::iterator<Class> Class::end<Class>() {
+  return NestedClasses.end();
+}
+
+template <>
+Class::const_iterator<Class> Class::end<Class>() const {
+  return NestedClasses.end();
+}
+
+template <>
 Class::iterator<Enum> Class::begin<Enum>() {
   return NestedEnums.begin();
 }
@@ -170,6 +180,16 @@ Class::iterator<Enum> Class::begin<Enum>() {
 template <>
 Class::const_iterator<Enum> Class::begin<Enum>() const {
   return NestedEnums.begin();
+}
+
+template <>
+Class::iterator<Enum> Class::end<Enum>() {
+  return NestedEnums.end();
+}
+
+template <>
+Class::const_iterator<Enum> Class::end<Enum>() const {
+  return NestedEnums.end();
 }
 
 } // namespace seryl

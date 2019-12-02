@@ -61,13 +61,14 @@ private:
   std::string Name;
   std::string FullyQualifiedName;
   std::vector<Item> Items;
+  bool Complete;
 
   Enum(const Enum&) = delete;
 
 public:
 
   explicit Enum(const std::string &N, Scope *PS)
-      : Name(N) {
+      : Name(N), Complete(false) {
     assert(PS != nullptr &&
            "An enum definition should always have a parent scope.");
     FullyQualifiedName = PS->getFullyQualifiedName() + "." + Name;
@@ -90,6 +91,8 @@ public:
   const std::string &getName() const {
     return Name;
   }
+
+  bool isComplete() const { return Complete; }
 
   using iterator = std::vector<Item>::iterator;
   using const_iterator = std::vector<Item>::const_iterator;

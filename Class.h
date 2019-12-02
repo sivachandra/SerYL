@@ -27,6 +27,7 @@ class Class : public Scope {
   std::vector<std::unique_ptr<Field>> Fields;
   std::vector<std::unique_ptr<Class>> NestedClasses;
   std::vector<std::unique_ptr<Enum>> NestedEnums;
+  bool Complete;
 
   void emitFieldDumper(llvm::raw_ostream &OS, const std::string &indent);
 
@@ -34,7 +35,7 @@ class Class : public Scope {
 
 public:
 
-  Class(StringRef N, Scope *PS) : Scope(PS), Name(N) {
+  Class(StringRef N, Scope *PS) : Scope(PS), Name(N), Complete(false) {
     assert(PS != nullptr &&
            "A class definition should always have a parent scope.");
     FullyQualifiedName = PS->getFullyQualifiedName() + "." + Name;
@@ -48,6 +49,8 @@ public:
   bool lookupType(llvm::StringRef TypeName, Type &T) const override;
 
   const std::string &getName() const override { return Name; }
+
+  bool isComplete() const { return Complete; }
 
   static bool isClassHeader(llvm::StringRef H);
 

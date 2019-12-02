@@ -9,8 +9,44 @@
 #include <cstdlib>
 #include <system_error>
 
+static const char[] Indent = "  ";
+
 namespace llvm {
 namespace seryl {
+
+static void writeEnum(const Enum &E, const llvm::Twine &I, llvm::raw_ostream &OS) {
+  OS << I << "enum " << E.getName() << " {\n";
+
+  auto ItemEnd = E.end();
+  for (auto ItemIterator = E.begin(); ItemIterator != ItemEnd; ++ItemIterator) {
+    auto &Item = *ItemIterator;
+    OS << I + Indent << Item.getName();
+    if (Item.hasValue())
+      OS << " = " << Item.value();
+    OS << ",\n";
+  }
+
+  OS << I << "};\n";
+}
+
+static void writeClass(const Class &C, const llvm::Twine &I, llvm::raw_ostream &OS) {
+  OS << I << "class " << C.getName() << " {\n";
+
+  auto EnumEnd = C.end<Enum>();
+  for (auto EnumIterator = C.begin<Enum>(); EnumIterator != EnumEnd; ++EnumIterator) {
+    auto &E = *EnumIterator;
+    writeEnum(*E, I + Indent, OS);
+  }
+
+  auto ClassEnd = C.end<Class>();
+  for (auto ClassIterator = C.begin<Class>(); ClassIterator != ClassEnd; ++ClassIterator) {
+    OS << "public:\n";
+    auto &E = *EnumIterator;
+    writeEnum(*E, I + Indent, OS);
+  }
+
+  OS << I << "};\n";
+} 
 
 void GenCpp(const Unit *U, const std::string &OutDir) {
   llvm::StringRef SuffixRef(llvm::seryl::YCDSuffix);
@@ -32,25 +68,18 @@ void GenCpp(const Unit *U, const std::string &OutDir) {
   auto EnumEnd = MainPackage->end<Enum>();
   for (; EnumIterator != EnumEnd; ++EnumIterator) {
     auto &E = *EnumIterator;
-    OS << "enum " << E->getName() << " {\n";
-    auto ItemIterator = E->begin();
-    auto ItemEnd = E->end();
-    for (; ItemIterator != ItemEnd; ++ItemIterator) {
-      auto &Item = *ItemIterator;
-      OS << "  " << Item.getName();
-      if (Item.hasValue())
-        OS << " = " << Item.value();
-      OS << ",\n";
-    }
-    OS << "};\n";
+    if (!E->isComplete()) continue;
+
+    writeEnum(*E, "", OS);
   }
 
   auto ClassIterator = MainPackage->begin<Class>();
   auto ClassEnd = MainPackage->end<Class>();
   for (; ClassIterator != ClassEnd; ++ClassIterator) {
     auto &C = *ClassIterator;
-    OS << "class " << C->getName() << " {\n";
-    OS << "};\n";
+    if (!C->isComplete()) continue;
+
+    writeClass(*C, "", OS);
   }
 }
 
